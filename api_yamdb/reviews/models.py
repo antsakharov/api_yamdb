@@ -1,9 +1,11 @@
+import datetime
+
 from django.contrib.auth.models import AbstractBaseUser
-from django.core.validators import RegexValidator
+from django.core.validators import RegexValidator, MaxValueValidator
 from django.db import models
 
 from .managers import CustomUserManager
-from .validators import max_value_current_year
+
 
 
 class CustomUser(AbstractBaseUser):
@@ -27,7 +29,12 @@ class CustomUser(AbstractBaseUser):
     bio = models.TextField(
         blank=True)
     rule = models.CharField(
-        choices=ROLE_CHOISES, default='user')
+        max_length=20,
+        choices=ROLE_CHOISES,
+        default='user')
+
+    USERNAME_FIELD = 'username'
+    REQUIRED_FIELDS = []
 
     class Meta:
         ordering = ['username']
@@ -39,12 +46,13 @@ class CustomUser(AbstractBaseUser):
 class Category(models.Model):
     name = models.CharField(
         'имя категории',
-        max_length=200
+        max_length=256
     )
     slug = models.SlugField(
         'слаг категории',
+        max_length=50,
         unique=True,
-        db_index=True
+        validators=[RegexValidator(regex=r'^[\w.@+-]+\Z')],
     )
 
     class Meta:
@@ -52,7 +60,7 @@ class Category(models.Model):
         verbose_name_plural = 'Категории'
 
     def __str__(self):
-        return f'{self.name} {self.name}'
+        return self.name
 
 
 class Genre(models.Model):
@@ -63,7 +71,6 @@ class Genre(models.Model):
     slug = models.SlugField(
         'cлаг жанра',
         unique=True,
-        db_index=True
     )
 
     class Meta:
@@ -71,18 +78,17 @@ class Genre(models.Model):
         verbose_name_plural = 'Жанры'
 
     def __str__(self):
-        return f'{self.name} {self.name}'
+        return self.name
 
 
 class Title(models.Model):
     name = models.CharField(
         'название',
         max_length=200,
-        db_index=True
     )
     year = models.IntegerField(
         'год',
-        validators=(max_value_current_year, )
+        validators=[MaxValueValidator(datetime.date.today().year, 'Неверно введен год')]
     )
     category = models.ForeignKey(
         Category,
