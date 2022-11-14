@@ -52,7 +52,7 @@ class Category(models.Model):
         'слаг категории',
         max_length=50,
         unique=True,
-        validators=[RegexValidator(regex=r'^[\w.@+-]+\Z')],
+        validators=[RegexValidator(regex=r'^[-a-zA-Z0-9_]+$')],
     )
 
     class Meta:
