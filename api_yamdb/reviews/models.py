@@ -1,21 +1,18 @@
 import datetime
 
-from django.contrib.auth.models import AbstractBaseUser
-from django.core.validators import RegexValidator, MaxValueValidator
+from django.contrib.auth.models import AbstractUser
+from django.core.validators import MaxValueValidator, RegexValidator
 from django.db import models
 
-from .managers import CustomUserManager
+ROLE_CHOISES = [('user', 'пользователь'),
+                ('moderator', 'модератор'),
+                ('admin', 'администратор')]
 
-
-class CustomUser(AbstractBaseUser):
-    ROLE_CHOISES = [('user', 'пользователь'),
-                    ('moderator', 'модератор'),
-                    ('admin', 'администратор')]
-    objects = CustomUserManager()
+class CustomUser(AbstractUser):
     username = models.CharField(
         max_length=150,
         unique=True,
-        validators=[RegexValidator(regex=r'^[\w.@+-]+\Z')])
+        validators=[RegexValidator(regex=r'^[\w.@+-]+$')])
     email = models.EmailField(
         max_length=254,
         unique=True)
@@ -27,22 +24,24 @@ class CustomUser(AbstractBaseUser):
         blank=True)
     bio = models.TextField(
         blank=True)
-    rule = models.CharField(
+    role = models.CharField(
         max_length=20,
         choices=ROLE_CHOISES,
         default='user')
-    is_staff = models.BooleanField(
-        default=False)
-    is_active = models.BooleanField(
-        default=True)
-    USERNAME_FIELD = 'username'
-    REQUIRED_FIELDS = []
 
     class Meta:
         ordering = ['username']
 
     def __str__(self):
         return self.username
+
+    @property
+    def is_admin(self):
+        return self.role == 'admin' or self.is_staff
+
+    @property
+    def is_moderator(self):
+        return self.role == 'moderator'
 
 
 class Category(models.Model):

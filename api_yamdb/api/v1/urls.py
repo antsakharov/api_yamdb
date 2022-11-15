@@ -1,12 +1,9 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
-from .views import (CommentViewSet,
-                    ReviewViewSet,
-                    GenreViewSet,
-                    CategoryViewSet,
-                    TitleViewSet,
-                    CustomUserViewSet,)
+from .views import (APISignup, CategoryViewSet, CommentViewSet, CreateToken,
+                    CustomUserViewSet, GenreViewSet, ReviewViewSet,
+                    TitleViewSet)
 
 app_name = 'api'
 router = DefaultRouter()
@@ -42,8 +39,20 @@ router.register(
     basename='comments'
 )
 
+token_auth_urls = [
+    path(
+        'auth/signup/',
+        APISignup.as_view(),
+        name='signup'
+    ),
+    path(
+        'auth/token/',
+        CreateToken.as_view(),
+        name='gain_token'
+    ),
+]
+
 urlpatterns = [
     path('', include(router.urls)),
-    #path('', include('djoser.urls')),
-    #path('', include('djoser.urls.jwt')),
+    path('', include(token_auth_urls)),
 ]
