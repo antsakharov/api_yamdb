@@ -7,7 +7,6 @@ from django.db import models
 from .managers import CustomUserManager
 
 
-
 class CustomUser(AbstractBaseUser):
     ROLE_CHOISES = [('user', 'пользователь'),
                     ('moderator', 'модератор'),
