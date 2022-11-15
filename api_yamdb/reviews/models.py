@@ -32,7 +32,10 @@ class CustomUser(AbstractBaseUser):
         max_length=20,
         choices=ROLE_CHOISES,
         default='user')
-
+    is_staff = models.BooleanField(
+        default=False)
+    is_active = models.BooleanField(
+        default=True)
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = []
 
@@ -116,3 +119,4 @@ class Title(models.Model):
 
     def __str__(self):
         return self.name
+
