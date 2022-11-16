@@ -1,13 +1,17 @@
 from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
-from rest_framework import permissions, status, views, viewsets
+from rest_framework import permissions, status, views, viewsets, mixins, filters
 from rest_framework.decorators import action
+from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
-from reviews.models import CustomUser
-from .permissions import IsAdminOrReadOnly
-from .serializers import SignupSerializer, TokenSerializer, UserSerializer
+from reviews.models import CustomUser, Category, Genre, Title
+
+from .filters import TitleFilter
+from .permissions import IsAdminOrReadOnly, ReadOnlyOrIsAdminOrModeratorOrAuthor
+from .serializers import SignupSerializer, TokenSerializer, UserSerializer, GenreSerializer, CategorySerializer, \
+    TitleSerializer, TitleCreateSerializer
 
 
 class APISignup(views.APIView):
@@ -53,16 +57,43 @@ class ReviewViewSet(viewsets.ModelViewSet):
     pass
 
 
-class GenreViewSet(viewsets.ModelViewSet):
+class CreateListDestroyViewSet(mixins.CreateModelMixin,
+                               mixins.ListModelMixin,
+                               mixins.DestroyModelMixin,
+                               viewsets.GenericViewSet,):
     pass
 
 
-class CategoryViewSet(viewsets.ModelViewSet):
-    pass
+class GenreViewSet(CreateListDestroyViewSet):
+    queryset = Genre.objects.all()
+    serializer_class = GenreSerializer
+    permission_classes = (ReadOnlyOrIsAdminOrModeratorOrAuthor,)
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('name',)
+    lookup_field = 'slug'
+
+
+class CategoryViewSet(CreateListDestroyViewSet):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('name',)
+    lookup_field = 'slug'
+    permission_classes = (ReadOnlyOrIsAdminOrModeratorOrAuthor,)
 
 
 class TitleViewSet(viewsets.ModelViewSet):
-    pass
+    queryset = Title.objects.all()
+    serializer_class = TitleSerializer
+    pagination_class = LimitOffsetPagination
+    filter_class = filterset_class = TitleFilter
+    permission_classes = (ReadOnlyOrIsAdminOrModeratorOrAuthor,)
+
+    def get_serializer_class(self):
+        if self.request.method in ('POST', 'PATCH',):
+            return TitleCreateSerializer
+        return TitleSerializer
+
 
 
 class CustomUserViewSet(viewsets.ModelViewSet):
