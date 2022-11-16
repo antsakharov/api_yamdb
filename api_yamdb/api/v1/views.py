@@ -6,7 +6,6 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
 from reviews.models import CustomUser
-
 from .permissions import IsAdminOrReadOnly
 from .serializers import SignupSerializer, TokenSerializer, UserSerializer
 
@@ -72,9 +71,9 @@ class CustomUserViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAdminOrReadOnly,)
     lookup_field = ('username')
 
-    @action(methods=['get', 'patch'],
-            detail=False,
-            permission_classes=[permissions.IsAuthenticated])
+    @action(permission_classes=[permissions.IsAuthenticated],
+            methods=['get', 'patch'],
+            detail=False)
     def me(self, request):
         if request.method == 'GET':
             user = self.request.user
@@ -83,10 +82,10 @@ class CustomUserViewSet(viewsets.ModelViewSet):
 
         if request.method == 'PATCH':
             user = get_object_or_404(CustomUser, id=request.user.id)
-            fixed_data = self.request.data.copy()
+            changed_data = self.request.data.copy()
             if ('role' in self.request.data and user.role == 'user'):
-                fixed_data['role'] = 'user'
-            serializer = UserSerializer(user, data=fixed_data, partial=True)
+                changed_data['role'] = 'user'
+            serializer = UserSerializer(user, data=changed_data, partial=True)
             serializer.is_valid(raise_exception=True)
             serializer.save()
             return Response(data=serializer.data, status=status.HTTP_200_OK)
