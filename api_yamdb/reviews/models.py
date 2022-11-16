@@ -2,11 +2,13 @@ import datetime
 
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MaxValueValidator, RegexValidator
+from django.core.exceptions import ValidationError
 from django.db import models
 
-ROLE_CHOISES = [('user', 'пользователь'),
+ROLE_CHOICES = [('user', 'пользователь'),
                 ('moderator', 'модератор'),
                 ('admin', 'администратор')]
+
 
 class CustomUser(AbstractUser):
     username = models.CharField(
@@ -26,7 +28,7 @@ class CustomUser(AbstractUser):
         blank=True)
     role = models.CharField(
         max_length=20,
-        choices=ROLE_CHOISES,
+        choices=ROLE_CHOICES,
         default='user')
 
     class Meta:
@@ -42,6 +44,7 @@ class CustomUser(AbstractUser):
     @property
     def is_moderator(self):
         return self.role == 'moderator'
+
 
 
 class Category(models.Model):
