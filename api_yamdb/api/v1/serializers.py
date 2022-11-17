@@ -1,9 +1,10 @@
+from django.db.models import Avg
 from rest_framework import serializers
 from rest_framework.serializers import (CharField,
                                         ModelSerializer,
                                         ValidationError)
 
-from reviews.models import CustomUser, Category, Genre, Title
+from reviews.models import CustomUser, Category, Genre, Title, Review, Comment
 
 
 class SignupSerializer(ModelSerializer):
@@ -74,3 +75,23 @@ class TitleCreateSerializer(serializers.ModelSerializer):
         fields = (
             'id', 'name', 'year', 'description', 'genre', 'category')
         model = Title
+
+
+class ReviewSerializer(serializers.ModelSerializer):
+    author = serializers.StringRelatedField(read_only=True, required=False)
+    score = serializers.SerializerMethodField()
+ 
+    class Meta:
+        model = Review
+        fields = ('id', 'text', 'author', 'score', 'pub_date',)
+    
+    def get_score(self, obj):
+        return obj.score.aggregate(Avg('score'))['score__avg']
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    author = serializers.StringRelatedField(read_only=True, required=False)
+        
+    class Meta:
+        model = Review
+        fields = ('id', 'text', 'author', 'pub_date',)
