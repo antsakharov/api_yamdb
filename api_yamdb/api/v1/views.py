@@ -6,12 +6,12 @@ from rest_framework.decorators import action
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
-from reviews.models import CustomUser, Category, Genre, Title
+from reviews.models import CustomUser, Category, Genre, Title, Review, Comment
 
 from .filters import TitleFilter
 from .permissions import IsAdminOrReadOnly, ReadOnlyOrIsAdminOrModeratorOrAuthor
 from .serializers import SignupSerializer, TokenSerializer, UserSerializer, GenreSerializer, CategorySerializer, \
-    TitleSerializer, TitleCreateSerializer
+    TitleSerializer, TitleCreateSerializer, ReviewSerializer, CommentSerializer
 
 
 class APISignup(views.APIView):
@@ -49,12 +49,36 @@ class CreateToken(views.APIView):
         return Response("Confirm code invalid", status=status.HTTP_400_BAD_REQUEST)
 
 
-class CommentViewSet(viewsets.ModelViewSet):
-    pass
-
-
 class ReviewViewSet(viewsets.ModelViewSet):
-    pass
+    serializer_class = ReviewSerializer
+    permission_classes = (ReadOnlyOrIsAdminOrModeratorOrAuthor, )
+
+    def get_queryset(self):
+        title_id = self.kwargs.get("title_id")
+        new_queryset = Review.objects.filter(title_id=title_id)
+        return new_queryset
+
+    def perform_create(self, serializer):
+        title_id = self.kwargs.get("title_id")
+        serializer.save(author=self.request.user, title_id=title_id)
+
+
+class CommentViewSet(viewsets.ModelViewSet):
+    serializer_class = CommentSerializer
+    permission_classes = (ReadOnlyOrIsAdminOrModeratorOrAuthor, )
+
+    def get_queryset(self):
+        review_id = self.kwargs.get("review_id")
+        new_queryset = Comment.objects.filter(
+            review_id=review_id
+        )
+        return new_queryset
+
+    def perform_create(self, serializer):
+        review_id = self.kwargs.get("review_id")
+        serializer.save(
+            author=self.request.user, review_id=review_id
+        )
 
 
 class CreateListDestroyViewSet(mixins.CreateModelMixin,
