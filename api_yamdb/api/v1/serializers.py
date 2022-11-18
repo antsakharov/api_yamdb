@@ -80,19 +80,17 @@ class TitleCreateSerializer(serializers.ModelSerializer):
 class ReviewSerializer(serializers.ModelSerializer):
     author = serializers.StringRelatedField(read_only=True, required=False)
     score = serializers.IntegerField()
- 
+
     class Meta:
         model = Review
         fields = ('id', 'text', 'author', 'score', 'pub_date',)
-    
-
     def get_score(self, obj):
         return obj.score.aggregate(Avg('score'))['score__avg']
 
 
 class CommentSerializer(serializers.ModelSerializer):
     author = serializers.StringRelatedField(read_only=True, required=False)
-        
+
     class Meta:
-        model = Review
+        model = Comment
         fields = ('id', 'text', 'author', 'pub_date',)
