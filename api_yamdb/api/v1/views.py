@@ -9,7 +9,7 @@ from rest_framework_simplejwt.tokens import AccessToken
 from reviews.models import CustomUser, Category, Genre, Title, Review, Comment
 
 from .filters import TitleFilter
-from .permissions import IsAdminOrReadOnly, ReadOnlyOrIsAdminOrModeratorOrAuthor
+from .permissions import IsAdminOrReadOnly, ReadOnlyOrIsAdminOrModeratorOrAuthor, ListOrAdminModeratorOnly
 from .serializers import SignupSerializer, TokenSerializer, UserSerializer, GenreSerializer, CategorySerializer, \
     TitleSerializer, TitleCreateSerializer, ReviewSerializer, CommentSerializer
 
@@ -91,7 +91,7 @@ class CreateListDestroyViewSet(mixins.CreateModelMixin,
 class GenreViewSet(CreateListDestroyViewSet):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
-    permission_classes = (ReadOnlyOrIsAdminOrModeratorOrAuthor,)
+    permission_classes = (ListOrAdminModeratorOnly,)
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
     lookup_field = 'slug'
@@ -103,7 +103,7 @@ class CategoryViewSet(CreateListDestroyViewSet):
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
     lookup_field = 'slug'
-    permission_classes = (ReadOnlyOrIsAdminOrModeratorOrAuthor,)
+    permission_classes = (ListOrAdminModeratorOnly,)
 
 
 class TitleViewSet(viewsets.ModelViewSet):
@@ -111,7 +111,7 @@ class TitleViewSet(viewsets.ModelViewSet):
     serializer_class = TitleSerializer
     pagination_class = LimitOffsetPagination
     filter_class = filterset_class = TitleFilter
-    permission_classes = (ReadOnlyOrIsAdminOrModeratorOrAuthor,)
+    permission_classes = (ListOrAdminModeratorOnly,)
 
     def get_serializer_class(self):
         if self.request.method in ('POST', 'PATCH',):

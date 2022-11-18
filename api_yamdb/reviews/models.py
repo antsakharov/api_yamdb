@@ -4,9 +4,10 @@ from django.contrib.auth.models import AbstractUser
 from django.core.validators import MaxValueValidator, RegexValidator, MinValueValidator
 from django.db import models
 
-ROLE_CHOIСES = [('user', 'пользователь'),
+ROLE_CHOICES = [('user', 'пользователь'),
                 ('moderator', 'модератор'),
                 ('admin', 'администратор')]
+
 
 class CustomUser(AbstractUser):
     username = models.CharField(
@@ -26,7 +27,7 @@ class CustomUser(AbstractUser):
         blank=True)
     role = models.CharField(
         max_length=20,
-        choices=ROLE_CHOIСES,
+        choices=ROLE_CHOICES,
         default='user')
 
     class Meta:
@@ -35,6 +36,9 @@ class CustomUser(AbstractUser):
     def __str__(self):
         return self.username
 
+    @property
+    def is_user(self):
+        return self.role == 'user'
     @property
     def is_admin(self):
         return self.role == 'admin' or self.is_staff
