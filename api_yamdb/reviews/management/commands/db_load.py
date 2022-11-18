@@ -14,12 +14,10 @@ FILE_MODEL = {
 
 
 class Command(BaseCommand):
-    help = 'Команда для импорта данных из .csv файла в БД'
+    help = 'Команда для импорта данных из .csv файла в БД.' \
+           'Импорт выполняется командой python manage.py db_load'
 
     def handle(self, *args, **options):
-        """
-        Импорт БД командой python manage.py db_load
-        """
         for file_name, model in FILE_MODEL.items():
             with open(
                     f'static/data/{file_name}.csv',
