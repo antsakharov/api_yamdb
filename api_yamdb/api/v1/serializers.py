@@ -3,7 +3,7 @@ from rest_framework import serializers
 from rest_framework.serializers import (CharField,
                                         ModelSerializer,
                                         ValidationError)
-
+from django.shortcuts import get_object_or_404
 from reviews.models import CustomUser, Category, Genre, Title, Review, Comment
 
 
@@ -52,11 +52,10 @@ class TitleSerializer(serializers.ModelSerializer):
 
     genre = GenreSerializer(many=True, read_only=True)
     category = CategorySerializer(read_only=True)
-
+    rating = serializers.IntegerField()
     class Meta:
-        fields = (
-            'id', 'name', 'year', 'description', 'genre', 'category')
         model = Title
+        fields = ('id', 'name', 'year', 'rating', 'description', 'genre', 'category')
 
 
 class TitleCreateSerializer(serializers.ModelSerializer):
@@ -70,23 +69,30 @@ class TitleCreateSerializer(serializers.ModelSerializer):
         queryset=Genre.objects.all(),
         many=True
     )
-
     class Meta:
+        model = Title
         fields = (
             'id', 'name', 'year', 'description', 'genre', 'category')
-        model = Title
 
 
 class ReviewSerializer(serializers.ModelSerializer):
     author = serializers.StringRelatedField(read_only=True, required=False)
     score = serializers.IntegerField()
-
     class Meta:
         model = Review
         fields = ('id', 'text', 'author', 'score', 'pub_date',)
-    def get_score(self, obj):
-        return obj.score.aggregate(Avg('score'))['score__avg']
-
+    
+    def validate(self, data):
+        request = self.context['request']
+        author = request.user
+        title_id = self.context.get('view').kwargs.get('title_id')
+        title = get_object_or_404(Title, pk=title_id)
+        if (
+                request.method == 'POST'
+                and Review.objects.filter(title=title, author=author).exists()
+        ):
+            raise ValidationError('Может оставить только один отзыв!')
+        return data
 
 class CommentSerializer(serializers.ModelSerializer):
     author = serializers.StringRelatedField(read_only=True, required=False)

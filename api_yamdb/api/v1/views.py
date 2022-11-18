@@ -7,7 +7,7 @@ from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
 from reviews.models import CustomUser, Category, Genre, Title, Review, Comment
-
+from django.db.models import Avg
 from .filters import TitleFilter
 from .permissions import IsAdminOrReadOnly, ReadOnlyOrIsAdminOrModeratorOrAuthor, ListOrAdminModeratorOnly
 from .serializers import SignupSerializer, TokenSerializer, UserSerializer, GenreSerializer, CategorySerializer, \
@@ -52,7 +52,6 @@ class CreateToken(views.APIView):
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
     permission_classes = (ReadOnlyOrIsAdminOrModeratorOrAuthor, )
-
     def get_queryset(self):
         title_id = self.kwargs.get("title_id")
         new_queryset = Review.objects.filter(title_id=title_id)
@@ -67,18 +66,16 @@ class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
     permission_classes = (ReadOnlyOrIsAdminOrModeratorOrAuthor, )
 
-    def get_queryset(self):
-        review_id = self.kwargs.get("review_id")
-        new_queryset = Comment.objects.filter(
-            review_id=review_id
-        )
-        return new_queryset
+    def get_review(self):
+        title_id = self.kwargs.get('title_id')
+        review_id = self.kwargs.get('review_id')
+        return get_object_or_404(Review, id=review_id, title=title_id)
 
     def perform_create(self, serializer):
-        review_id = self.kwargs.get("review_id")
-        serializer.save(
-            author=self.request.user, review_id=review_id
-        )
+        serializer.save(author=self.request.user, review=self.get_review())
+
+    def get_queryset(self):
+        return self.get_review().comments.all()
 
 
 class CreateListDestroyViewSet(mixins.CreateModelMixin,
@@ -107,7 +104,8 @@ class CategoryViewSet(CreateListDestroyViewSet):
 
 
 class TitleViewSet(viewsets.ModelViewSet):
-    queryset = Title.objects.all()
+    queryset = Title.objects.all().annotate(
+        rating=Avg("reviews__score")).order_by('category')
     serializer_class = TitleSerializer
     pagination_class = LimitOffsetPagination
     filter_class = filterset_class = TitleFilter
