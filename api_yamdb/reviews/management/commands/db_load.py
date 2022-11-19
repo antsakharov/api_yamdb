@@ -1,7 +1,7 @@
 import csv
 
 from django.core.management.base import BaseCommand
-from reviews.models import Category, Comment, Genre, Review, Title, CustomUser
+from reviews.models import Category, Comment, CustomUser, Genre, Review, Title, TitleGenre
 
 FILE_MODEL = {
     'category': Category,
@@ -10,6 +10,7 @@ FILE_MODEL = {
     'users': CustomUser,
     'review': Review,
     'comments': Comment,
+    'genre_title': TitleGenre,
 }
 
 
