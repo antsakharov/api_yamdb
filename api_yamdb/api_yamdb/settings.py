@@ -130,7 +130,7 @@ AUTH_USER_MODEL = 'reviews.CustomUser'
 
 
 EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
-EMAIL_FILE_PATH = os.path.join(BASE_DIR, 'sent_emails') 
+EMAIL_FILE_PATH = os.path.join(BASE_DIR, 'sent_emails')
 
 EMAIL_HOST = 'smtp.email-domain.com'
 EMAIL_HOST_USER = 'test@gmail.com'
