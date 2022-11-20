@@ -10,7 +10,7 @@ from reviews.models import Category, Comment, CustomUser, Genre, Review, Title
 class SignupSerializer(ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ['username', 'email']
+        fields = ('username', 'email')
 
     @staticmethod
     def validate_username(value):
@@ -22,10 +22,11 @@ class SignupSerializer(ModelSerializer):
 
 class TokenSerializer(ModelSerializer):
     confirmation_code = CharField(max_length=50, required=True)
+    username = CharField()
 
     class Meta:
         model = CustomUser
-        fields = ['username', 'confirmation_code']
+        fields = ('username', 'confirmation_code')
 
 
 class UserSerializer(ModelSerializer):
@@ -54,8 +55,7 @@ class TitleSerializer(ModelSerializer):
 
     class Meta:
         model = Title
-        fields = ('id', 'name', 'year', 'rating',
-                  'description', 'genre', 'category')
+        fields = '__all__'
 
 
 class TitleCreateSerializer(ModelSerializer):
@@ -69,26 +69,26 @@ class TitleCreateSerializer(ModelSerializer):
 
     class Meta:
         model = Title
-        fields = ('id', 'name', 'year', 'description', 'genre', 'category')
+        fields = '__all__'
 
 
 class ReviewSerializer(ModelSerializer):
     author = StringRelatedField(read_only=True, required=False)
-    score = IntegerField()
 
     class Meta:
         model = Review
         fields = ('id', 'text', 'author', 'score', 'pub_date')
 
-    def validate(self, data):
-        request = self.context['request']
-        author = request.user
-        title_id = self.context.get('view').kwargs.get('title_id')
-        title = get_object_or_404(Title, pk=title_id)
-        if (request.method == 'POST' and
-                Review.objects.filter(title=title, author=author).exists()):
-            raise ValidationError('Может оставить только один отзыв!')
+    def validate(self, data): 
+        if self.context.get('request').method == 'POST':
+            title_id = self.context.get('view').kwargs.get('title_id') 
+            title = get_object_or_404(Title, pk=title_id)
+            if Review.objects.filter(author=self.context.get('request').user, title=title_id).exists():
+                raise ValidationError( 
+                    'Вы уже оставляли отзыв на это произведение'
+                )
         return data
+
 
 
 class CommentSerializer(ModelSerializer):
