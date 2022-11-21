@@ -11,8 +11,7 @@ class SignupSerializer(ModelSerializer):
         model = CustomUser
         fields = ('username', 'email')
 
-    @staticmethod
-    def validate_username(value):
+    def validate_username(self, value):
         if value == 'me':
             raise ValidationError('Имя зарезервировано системой,'
                                   ' выберите другое')
