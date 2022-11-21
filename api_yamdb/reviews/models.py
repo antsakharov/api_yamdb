@@ -171,14 +171,6 @@ class Review(pub_date_abstract_model):
         return self.text
 
 
-class pub_date_abstract(models.Model):
-    pub_date = models.DateTimeField(
-        'Дата добавления', auto_now_add=True)
-
-    class Meta:
-        abstract = True
-
-
 class Comment(pub_date_abstract_model):
     review = models.ForeignKey(
         Review, on_delete=models.CASCADE, related_name='comments')
