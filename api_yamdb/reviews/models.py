@@ -18,6 +18,14 @@ class UserRole(Enum):
         return tuple((i.value, i.name) for i in UserRole)
 
 
+class pub_date_abstract_model(models.Model):
+    pub_date = models.DateTimeField(
+        'Дата добавления', auto_now_add=True)
+
+    class Meta:
+        abstract = True
+
+
 class CustomUser(AbstractUser):
     email = models.EmailField(
         max_length=254,
@@ -134,7 +142,7 @@ class TitleGenre(models.Model):
         return f'{self.title} {self.genre}'
 
 
-class Review(models.Model):
+class Review(pub_date_abstract_model):
     title = models.ForeignKey(
         Title,
         on_delete=models.CASCADE,
@@ -145,12 +153,9 @@ class Review(models.Model):
         on_delete=models.CASCADE,
         related_name='reviews')
     score = models.PositiveSmallIntegerField(
-        validators=(MinValueValidator(0, 'Оценка не может быть меньше 0'),
+        validators=(MinValueValidator(1, 'Оценка не может быть меньше 1'),
                     MaxValueValidator(10, 'Оценка происходит '
                                           'по 10-ти бальной шкале')))
-    pub_date = models.DateTimeField(
-        'Дата добавления',
-        auto_now_add=True)
 
     class Meta:
         verbose_name = 'Отзыв'
@@ -166,15 +171,20 @@ class Review(models.Model):
         return self.text
 
 
-class Comment(models.Model):
+class pub_date_abstract(models.Model):
+    pub_date = models.DateTimeField(
+        'Дата добавления', auto_now_add=True)
+
+    class Meta:
+        abstract = True
+
+
+class Comment(pub_date_abstract_model):
     review = models.ForeignKey(
-        Review, on_delete=models.CASCADE, related_name='comments'
-    )
+        Review, on_delete=models.CASCADE, related_name='comments')
     text = models.TextField('Текст комментария')
     author = models.ForeignKey(
         CustomUser, on_delete=models.CASCADE, related_name='comments')
-    pub_date = models.DateTimeField(
-        'Дата добавления', auto_now_add=True, db_index=True)
 
     class Meta:
         ordering = ('-pub_date',)

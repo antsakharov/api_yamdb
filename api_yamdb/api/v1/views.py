@@ -17,7 +17,7 @@ from api.v1.serializers import (CategorySerializer, CommentSerializer,
                                 SignupSerializer, TitleCreateSerializer,
                                 TitleSerializer, TokenSerializer,
                                 UserSerializer)
-from reviews.models import Category, CustomUser, Genre, Review, Title, UserRole
+from reviews.models import Category, CustomUser, Genre, Review, Title
 
 
 def get_confirmation_code(user):
@@ -143,17 +143,9 @@ class CustomUserViewSet(viewsets.ModelViewSet):
         if request.method == 'GET':
             return Response(self.get_serializer(request.user).data,
                             status.HTTP_200_OK)
-        request.method == 'PATCH'
-        # нашёл способ добавить request.data._mutable=True,
-        # потом изменять значение и снова указывать False,
-        # но через copy кажется проще
-        changed_data = request.data.copy()
-        if ('role' in self.request.data
-                and request.user.role == UserRole.USER.value):
-            changed_data['role'] = UserRole.USER.value
         serializer = self.get_serializer(request.user,
-                                         data=changed_data,
+                                         data=request.data,
                                          partial=True)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(data=serializer.data, status=status.HTTP_200_OK)
+        serializer.save(role=request.user.role, partial=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
