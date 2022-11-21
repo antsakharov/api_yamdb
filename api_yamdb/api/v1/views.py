@@ -62,17 +62,17 @@ class CreateToken(views.APIView):
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
-    serializer_class = ReviewSerializer
     permission_classes = [ReadOnlyOrIsAdminOrModeratorOrAuthor]
+    serializer_class = ReviewSerializer
+
+    def check_title(self):
+        return get_object_or_404(Title, id=self.kwargs.get('title_id'))
 
     def get_queryset(self):
-        title_id = self.kwargs.get('title_id')
-        new_queryset = Review.objects.filter(title_id=title_id)
-        return new_queryset
+        return Review.objects.filter(title=self.check_title())
 
     def perform_create(self, serializer):
-        title_id = self.kwargs.get('title_id')
-        serializer.save(author=self.request.user, title_id=title_id)
+        serializer.save(author=self.request.user, title=self.check_title())
 
 
 class CommentViewSet(viewsets.ModelViewSet):

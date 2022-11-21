@@ -1,5 +1,4 @@
-
-from django.shortcuts import get_object_or_404
+from rest_framework.relations import PrimaryKeyRelatedField
 from rest_framework.serializers import (CharField, IntegerField,
                                         ModelSerializer, SlugRelatedField,
                                         ValidationError, StringRelatedField)
@@ -73,22 +72,27 @@ class TitleCreateSerializer(ModelSerializer):
 
 
 class ReviewSerializer(ModelSerializer):
-    author = StringRelatedField(read_only=True, required=False)
+    author = SlugRelatedField(
+        slug_field='username',
+        read_only=True
+    )
+    title = PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model = Review
-        fields = ('id', 'text', 'author', 'score', 'pub_date')
+        fields = '__all__'
 
-    def validate(self, data): 
-        if self.context.get('request').method == 'POST':
-            title_id = self.context.get('view').kwargs.get('title_id') 
-            title = get_object_or_404(Title, pk=title_id)
-            if Review.objects.filter(author=self.context.get('request').user, title=title_id).exists():
-                raise ValidationError( 
-                    'Вы уже оставляли отзыв на это произведение'
-                )
+    def validate(self, data):
+        if self.context['request'].method != 'POST':
+            return data
+        if Review.objects.filter(
+            author=self.context['request'].user,
+            title__id=self.context['view'].kwargs.get('title_id')
+        ).exists():
+            raise ValidationError(
+                'Вы уже оставляли отзыв на это произведении'
+            )
         return data
-
 
 
 class CommentSerializer(ModelSerializer):
