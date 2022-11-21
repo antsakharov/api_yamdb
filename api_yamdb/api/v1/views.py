@@ -9,14 +9,25 @@ from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
 
-from reviews.models import Category, CustomUser, Genre, Review, Title
-from .filters import TitleFilter
-from .permissions import (IsAdminOrReadOnly, ListOrAdminModeratorOnly,
-                          ReadOnlyOrIsAdminOrModeratorOrAuthor)
-from .serializers import (CategorySerializer, CommentSerializer,
-                          GenreSerializer, ReviewSerializer, SignupSerializer,
-                          TitleCreateSerializer, TitleSerializer,
-                          TokenSerializer, UserSerializer)
+from api.v1.filters import TitleFilter
+from api.v1.permissions import (IsAdminOrReadOnly, ListOrAdminModeratorOnly,
+                                ReadOnlyOrIsAdminOrModeratorOrAuthor)
+from api.v1.serializers import (CategorySerializer, CommentSerializer,
+                                GenreSerializer, ReviewSerializer,
+                                SignupSerializer, TitleCreateSerializer,
+                                TitleSerializer, TokenSerializer,
+                                UserSerializer)
+from reviews.models import Category, CustomUser, Genre, Review, Title, UserRole
+
+
+def get_confirmation_code(user):
+    token = default_token_generator.make_token(user)
+    send_mail(
+        subject='Ваш код для получения api-токена.',
+        message=f'Код: {token}',
+        from_email='test@gmail.com',
+        recipient_list=[user.email],
+        fail_silently=False)
 
 
 class APISignup(views.APIView):
@@ -28,13 +39,7 @@ class APISignup(views.APIView):
         username = serializer.validated_data['username']
         email = serializer.validated_data['email']
         user = CustomUser.objects.create(username=username, email=email)
-        token = default_token_generator.make_token(user)
-        send_mail(
-            subject='Ваш код для получения api-токена.',
-            message=f'Код: {token}',
-            from_email='test@gmail.com',
-            recipient_list=[user.email],
-            fail_silently=False)
+        get_confirmation_code(user)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -50,22 +55,24 @@ class CreateToken(views.APIView):
         if default_token_generator.check_token(user, confirmation_code):
             token = AccessToken.for_user(user)
             return Response({'token': f'{token}'}, status=status.HTTP_200_OK)
-        return Response("Confirm code invalid",
+        get_confirmation_code(user)
+        return Response('Неверно введённый код. '
+                        'Новый код отправлен вам на почту',
                         status=status.HTTP_400_BAD_REQUEST)
 
 
 class ReviewViewSet(viewsets.ModelViewSet):
-    serializer_class = ReviewSerializer
     permission_classes = [ReadOnlyOrIsAdminOrModeratorOrAuthor]
+    serializer_class = ReviewSerializer
+
+    def check_title(self):
+        return get_object_or_404(Title, id=self.kwargs.get('title_id'))
 
     def get_queryset(self):
-        title_id = self.kwargs.get('title_id')
-        new_queryset = Review.objects.filter(title_id=title_id)
-        return new_queryset
+        return Review.objects.filter(title=self.check_title())
 
     def perform_create(self, serializer):
-        title_id = self.kwargs.get('title_id')
-        serializer.save(author=self.request.user, title_id=title_id)
+        serializer.save(author=self.request.user, title=self.check_title())
 
 
 class CommentViewSet(viewsets.ModelViewSet):
@@ -134,16 +141,19 @@ class CustomUserViewSet(viewsets.ModelViewSet):
             detail=False)
     def me(self, request):
         if request.method == 'GET':
-            user = self.request.user
-            serializer = UserSerializer(user)
-            return Response(serializer.data, status.HTTP_200_OK)
-        if request.method == 'PATCH':
-            user = get_object_or_404(CustomUser, id=request.user.id)
-            changed_data = self.request.data.copy()
-            if ('role' in self.request.data and user.role == 'user'):
-                changed_data['role'] = 'user'
-            serializer = UserSerializer(user, data=changed_data, partial=True)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-            return Response(data=serializer.data, status=status.HTTP_200_OK)
-        return Response(data=request.data, status=status.HTTP_400_BAD_REQUEST)
+            return Response(self.get_serializer(request.user).data,
+                            status.HTTP_200_OK)
+        request.method == 'PATCH'
+        # нашёл способ добавить request.data._mutable=True,
+        # потом изменять значение и снова указывать False,
+        # но через copy кажется проще
+        changed_data = request.data.copy()
+        if ('role' in self.request.data
+                and request.user.role == UserRole.USER.value):
+            changed_data['role'] = UserRole.USER.value
+        serializer = self.get_serializer(request.user,
+                                         data=changed_data,
+                                         partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
